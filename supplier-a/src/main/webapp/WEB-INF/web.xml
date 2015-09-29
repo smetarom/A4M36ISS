@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<web-app version="3.1" xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd">
+	<security-constraint>
+		<web-resource-collection>
+			<web-resource-name>Supplier A Web Service</web-resource-name>
+			<url-pattern>/*</url-pattern>
+			<http-method>POST</http-method>
+		</web-resource-collection>
+		<auth-constraint>
+			<role-name>ws</role-name>
+		</auth-constraint>
+		<user-data-constraint>
+			<transport-guarantee>CONFIDENTIAL</transport-guarantee>
+		</user-data-constraint>
+	</security-constraint>
+	<security-role>
+		<role-name>ws</role-name>
+	</security-role>
+	<login-config>
+		<auth-method>BASIC</auth-method>
+		<realm-name>exam</realm-name>
+	</login-config>
+</web-app>

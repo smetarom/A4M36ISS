@@ -1,0 +1,13 @@
+embed-server --std-out=echo
+/subsystem=webservices:write-attribute(name=wsdl-host, value=jbossws.undefined.host)
+/system-property=javax.net.debug:add(value=ssl)
+/core-service=management/security-realm=exam-certificate:add()
+/core-service=management/security-realm=exam-certificate/server-identity=ssl:add(keystore-relative-to=jboss.server.config.dir,keystore-path=keystore.jks,keystore-password=redhat,alias=redhat)
+/core-service=management/security-realm=exam-certificate/authentication=truststore:add(keystore-relative-to=jboss.server.config.dir,keystore-path=keystore.jks,keystore-password=redhat)
+/subsystem=undertow/server=default-server/https-listener=https:add(socket-binding=https, security-realm=exam-certificate, verify-client=REQUESTED)
+/subsystem=security/security-domain=ssl:add()
+/subsystem=security/security-domain=ssl/jsse=classic:add(keystore={url=${jboss.server.config.dir}/keystore.jks,password=redhat},truststore={url=${jboss.server.config.dir}/keystore.jks,password=redhat})
+/subsystem=security/security-domain=client-cert:add()
+/subsystem=security/security-domain=client-cert/authentication=classic:add(login-modules=[{code=CertificateRoles,flag=required,module-options=[password-stacking=userFirstPass,securityDomain=ssl,rolesProperties=${jboss.server.config.dir}/ssl-roles.properties]}])
+data-source add --name=ExaminationDS --jndi-name=java:jboss/datasources/ExaminationDS --use-java-context=true --driver-name=h2 --connection-url=jdbc:h2:tcp://localhost/~/exam --user-name=sa --password=sa --spy=true --pool-prefill=true --min-pool-size=10 --max-pool-size=20
+deploy examination.ear
