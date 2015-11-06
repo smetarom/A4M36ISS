@@ -19,6 +19,7 @@ public class OrderAggregationStrategy implements AggregationStrategy {
             newBody = new ArrayList<>();
             newBody.add((ItemReply) body);
         } else {
+            System.out.println(body);
             newBody = (List<ItemReply>) body;
         }
         if (oldExchange == null) {

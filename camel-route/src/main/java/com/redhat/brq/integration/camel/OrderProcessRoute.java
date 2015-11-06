@@ -126,7 +126,7 @@ public class OrderProcessRoute extends RouteBuilder {
 
                 .removeHeaders("*")
                 .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.POST))
-                .to("https4://localhost:8443/accounting/rest/accounting/invoice/issue")
+                .to("https4://147.251.253.26:8443/accounting/rest/accounting/invoice/issue")
                 .convertBodyTo(String.class)
                 .log("Received Accounting response: ${body}")
 
