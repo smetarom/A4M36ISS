@@ -1,0 +1,46 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="
+         http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+         http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd">
+
+    <sslContextParameters id="sslContextParameters" xmlns="http://camel.apache.org/schema/spring">
+        <keyManagers keyPassword="redhat">
+            <keyStore type="JKS" resource="/home/smetana/School/SSI/wildfly-9.0.1.Final/standalone/configuration/keystore.jks" password="redhat"/>
+        </keyManagers>
+        <trustManagers>
+            <keyStore type="JKS" resource="/home/smetana/School/SSI/wildfly-9.0.1.Final/standalone/configuration/keystore.jks" password="redhat"/>
+        </trustManagers>
+    </sslContextParameters>
+
+    <bean id="jmsConnectionFactory" class="org.apache.activemq.ActiveMQSslConnectionFactory">
+        <property name="brokerURL" value="ssl://localhost:61617"/>
+        <property name="userName" value="shipuser"/>
+        <property name="password" value="shippwd"/>
+        <property name="trustStore" value="${location.truststore}keystore.jks"/>
+        <property name="trustStorePassword" value="redhat"/>
+    </bean>
+
+    <bean id="jmsConfig" class="org.apache.camel.component.jms.JmsConfiguration">
+        <property name="connectionFactory" ref="jmsConnectionFactory"/>
+        <property name="transacted" value="false"/>
+    </bean>
+
+    <bean id="activemq" class="org.apache.activemq.camel.component.ActiveMQComponent">
+        <property name="configuration" ref="jmsConfig"/>
+    </bean>
+
+    <camelContext id="camel" xmlns="http://camel.apache.org/schema/spring">
+        <routeBuilder ref="routeBuilder"/>
+    </camelContext>
+
+    <bean id="routeBuilder" class="com.redhat.brq.integration.camel.OrderProcessRoute"/>
+
+    <bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close">
+        <property name="driverClassName" value="org.h2.Driver"/>
+        <property name="url" value="jdbc:h2:tcp://localhost/~/exam"/>
+        <property name="username" value="sa"/>
+        <property name="password" value="sa"/>
+    </bean>
+
+</beans>
