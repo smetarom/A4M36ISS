@@ -2,13 +2,16 @@ package com.redhat.brq.integration.camel;
 
 import com.redhat.brq.integration.camel.exception.MoreExpensiveException;
 import com.redhat.brq.integration.camel.exception.ValidationException;
+import com.redhat.brq.integration.camel.model.Invoice;
 import com.redhat.brq.integration.camel.model.Order;
 import com.redhat.brq.integration.camel.service.OrderValidator;
-import com.redhat.brq.integration.camel.service.StorageAQueryProcessor;
 import com.redhat.brq.integration.examination.supplier.a.ItemReply;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
+import org.apache.camel.Processor;
 import org.apache.camel.builder.RouteBuilder;
+import org.apache.camel.model.dataformat.JaxbDataFormat;
+import org.apache.camel.model.dataformat.JsonLibrary;
 import org.apache.camel.model.rest.RestBindingMode;
 
 import java.math.BigDecimal;
@@ -26,6 +29,9 @@ public class OrderProcessRoute extends RouteBuilder {
                 .dataFormatProperty("include", "NON_NULL") //
                 .dataFormatProperty("json.in.disableFeatures", "FAIL_ON_UNKNOWN_PROPERTIES");
 
+        JaxbDataFormat jaxb = new JaxbDataFormat(true);
+        jaxb.setContextPath("com.redhat.brq.integration.camel.model");
+
         rest("/orders").consumes("application/json").produces("application/json")
                 .post().type(Order.class).to("direct:new-order");
 
@@ -36,6 +42,7 @@ public class OrderProcessRoute extends RouteBuilder {
                 .onException(MoreExpensiveException.class).handled(true)
                 .log(LoggingLevel.ERROR, "Item was more expensive, canceling the order.")
                 .end()
+                .setHeader("orderAddress", simple("${body.address}"))
                 .setHeader("orderId", simple("${body.id}"))
                 .bean(OrderValidator.class, "validate")
                 .log("Issuing new order: ${body}")
@@ -115,21 +122,69 @@ public class OrderProcessRoute extends RouteBuilder {
 
 //        getContext().getComponent("")
 
-        from("seda:aggregate")
+        from("seda:aggregate").id("aggregate")
                 .log("aggregate")
-//                .aggregate(new OrderAggregationStrategy()).header("orderId").completionTimeout(1000L)
-                .process(new PrepareAccountingProcessor())
+//                .process(new PrepareAccountingProcessor())
+
 //                .removeHeaders("*")
 //                .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.POST))
-//                .to("jetty://localhost:8443/accounting/rest/accounting/invoice/issue")
+//                .to("https4://147.251.253.26:8443/accounting/rest/accounting/invoice/issue")
 //                .convertBodyTo(String.class)
 
-                .removeHeaders("*")
-                .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.POST))
-                .to("https4://147.251.253.26:8443/accounting/rest/accounting/invoice/issue")
-                .convertBodyTo(String.class)
-                .log("Received Accounting response: ${body}")
+                .setHeader("replies", body())
+                .process(new FakeAccountingAnswer())
+                .unmarshal().json(JsonLibrary.Jackson, Invoice.class)
+                .convertBodyTo(Invoice.class)
+                .log("Received Accounting response: ${body.status}")
+                .log("Received Accounting response: ${header.replies}")
+                .log("Address: ${header.orderAddress}")
+                .choice()
+                .to("direct:send-items");
 
-                .to("mock:result");
+        from("direct:send-items").id("send-items")
+                .to("activemq:queue:ORDERS")
+                .setBody(header("replies"))
+                .split(body())
+                .choice()
+                .when(simple("${body.inStore} == true"))
+                    .setHeader("itemId", simple("${body.id}"))
+                    .setHeader("count", simple("${body.count}"))
+                    .log("${header.count}")
+                    .setBody(constant("update ITEM set COUNT = COUNT - :?count where id = :?itemId"))
+                .to("jdbc:dataSource?useHeadersAsParameters=true")
+                .end();
+    }
+
+    private static class PersistItemsProcessor implements Processor {
+
+        @Override
+        public void process(Exchange exchange) throws Exception {
+        }
+    }
+
+    private static class FakeAccountingAnswer implements Processor {
+
+        @Override
+        public void process(Exchange exchange) throws Exception {
+            exchange.getIn().setBody("{\n" +
+                    "   \"invoiceId\": 1000001,\n" +
+                    "   \"order\":    {\n" +
+                    "      \"id\": 1,\n" +
+                    "      \"items\": [      {\n" +
+                    "         \"articleId\": 10,\n" +
+                    "         \"count\": 30,\n" +
+                    "         \"unitPrice\": 3\n" +
+                    "      }],\n" +
+                    "      \"address\":       {\n" +
+                    "         \"firstName\": \"Jiri\",\n" +
+                    "         \"lastName\": \"Novak\",\n" +
+                    "         \"street\": \"Purkynova\",\n" +
+                    "         \"city\": \"Brno\",\n" +
+                    "         \"zipCode\": \"602 00\"\n" +
+                    "      }\n" +
+                    "   },\n" +
+                    "   \"status\": \"ISSUED\"\n" +
+                    "}");
+        }
     }
 }
