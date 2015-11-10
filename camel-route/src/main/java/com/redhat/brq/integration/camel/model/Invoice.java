@@ -1,20 +1,11 @@
 package com.redhat.brq.integration.camel.model;
 
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlRootElement;
-
 /**
  * @author Roman Smetana
  */
-@XmlRootElement
-@XmlAccessorType(XmlAccessType.FIELD)
 public class Invoice {
-    @XmlElement
     private Long invoiceId;
     private InvoiceOrder order;
-    @XmlElement
     private String status;
 
     public Long getInvoiceId() {

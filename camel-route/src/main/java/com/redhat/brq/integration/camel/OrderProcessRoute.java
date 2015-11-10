@@ -139,9 +139,15 @@ public class OrderProcessRoute extends RouteBuilder {
                 .log("Received Accounting response: ${header.replies}")
                 .log("Address: ${header.orderAddress}")
                 .choice()
-                .to("direct:send-items");
+                .when(simple("${body.invoiceId} >= 0"))
+                .to("direct:send-items")
+                .otherwise()
+                .log("Invalid invoice")
+                .end()
+                ;
 
         from("direct:send-items").id("send-items")
+                .marshal().json(JsonLibrary.Jackson)
                 .to("activemq:queue:ORDERS")
                 .setBody(header("replies"))
                 .split(body())
@@ -152,14 +158,8 @@ public class OrderProcessRoute extends RouteBuilder {
                     .log("${header.count}")
                     .setBody(constant("update ITEM set COUNT = COUNT - :?count where id = :?itemId"))
                 .to("jdbc:dataSource?useHeadersAsParameters=true")
-                .end();
-    }
-
-    private static class PersistItemsProcessor implements Processor {
-
-        @Override
-        public void process(Exchange exchange) throws Exception {
-        }
+                .end()
+                ;
     }
 
     private static class FakeAccountingAnswer implements Processor {
