@@ -136,8 +136,6 @@ public class OrderProcessRoute extends RouteBuilder {
                 .unmarshal().json(JsonLibrary.Jackson, Invoice.class)
                 .convertBodyTo(Invoice.class)
                 .log("Received Accounting response: ${body.status}")
-                .log("Received Accounting response: ${header.replies}")
-                .log("Address: ${header.orderAddress}")
                 .choice()
                 .when(simple("${body.invoiceId} >= 0"))
                 .to("direct:send-items")
@@ -147,6 +145,8 @@ public class OrderProcessRoute extends RouteBuilder {
                 ;
 
         from("direct:send-items").id("send-items")
+                .transacted()
+                .setHeader("invoice", body())
                 .marshal().json(JsonLibrary.Jackson)
                 .to("activemq:queue:ORDERS")
                 .setBody(header("replies"))
@@ -155,10 +155,11 @@ public class OrderProcessRoute extends RouteBuilder {
                 .when(simple("${body.inStore} == true"))
                     .setHeader("itemId", simple("${body.id}"))
                     .setHeader("count", simple("${body.count}"))
-                    .log("${header.count}")
                     .setBody(constant("update ITEM set COUNT = COUNT - :?count where id = :?itemId"))
                 .to("jdbc:dataSource?useHeadersAsParameters=true")
                 .end()
+                .end()
+                .setBody(header("invoice"))
                 ;
     }
 
