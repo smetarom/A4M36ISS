@@ -11,8 +11,11 @@ import java.math.BigDecimal;
 public class ItemFoundProcessor implements org.apache.camel.Processor {
     @Override
     public void process(Exchange exchange) throws Exception {
+
         ItemReply itemReply = new ItemReply();
         itemReply.setAvailable(true);
-        itemReply.setPrice(exchange.getIn().getHeader("requestedPrice", BigDecimal.class));
+        System.out.println("ItemFoundPprocessor: " + exchange.getIn().getHeaders());
+        itemReply.setPrice(exchange.getIn().getHeader("PRICE", BigDecimal.class));
+
     }
 }

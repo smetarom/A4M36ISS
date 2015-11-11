@@ -27,8 +27,11 @@ public class OrderProcessRoute extends RouteBuilder {
                 .dataFormatProperty("include", "NON_NULL") //
                 .dataFormatProperty("json.in.disableFeatures", "FAIL_ON_UNKNOWN_PROPERTIES");
 
+
         rest("/orders").consumes("application/json").produces("application/json")
                 .post().type(Order.class).to("direct:new-order");
+
+
 
         from("direct:new-order").id("new-order")
                 .onException(ValidationException.class).handled(true)
@@ -40,6 +43,7 @@ public class OrderProcessRoute extends RouteBuilder {
                 .setHeader("orderId", simple("${body.id}"))
                 .bean(OrderValidator.class, "validate")
                 .log("Issuing new order: ${body}")
+                .log("Items in order: ${body.items}")
                 .split(simple("${body.items}"), new OrderAggregationStrategy())
                     .to("direct:query-storage")
                 .end()
@@ -55,7 +59,7 @@ public class OrderProcessRoute extends RouteBuilder {
                 .to("direct:process-item");
 
         from("direct:process-item").id("process-item")
-//                .log("From database: ${body}")
+                .log("From database: ${body}")
                 .choice()
                 .when(header("CamelJdbcRowCount").isGreaterThan(0))
                 .log("Item with id ${header.itemId} found.")

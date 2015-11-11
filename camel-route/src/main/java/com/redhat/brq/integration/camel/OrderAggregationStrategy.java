@@ -15,7 +15,7 @@ public class OrderAggregationStrategy implements AggregationStrategy {
     public Exchange aggregate(Exchange oldExchange, Exchange newExchange) {
         List<ItemReply> newBody = null;
         Object body = newExchange.getIn().getBody();
-        System.out.println(body);
+        System.out.println("Aggregation: " + oldExchange + ", " + newExchange);
         if (body instanceof ItemReply) {
             newBody = new ArrayList<>();
             newBody.add((ItemReply) body);
