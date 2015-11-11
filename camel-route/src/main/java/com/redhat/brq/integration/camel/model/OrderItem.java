@@ -3,19 +3,16 @@ package com.redhat.brq.integration.camel.model;
 import org.apache.camel.dataformat.bindy.annotation.CsvRecord;
 import org.apache.camel.dataformat.bindy.annotation.DataField;
 
-// TASK-3
-// Mark the class as csv record, use ';' as separator and crlf set to 'UNIX'
 @CsvRecord(separator = ";", crlf = "UNIX")
 public class OrderItem {
 
-    // TASK-3
-    // Mark this attribute as CSV field, do not forget to set correct position (pos)
     @DataField(pos = 1)
-    private String id;
+    private String sku;
 
-    // TASK-3
-    // Mark this attribute as CSV field, do not forget to set correct position (pos)
     @DataField(pos = 2)
+    private int id;
+
+    @DataField(pos = 3)
     private int count;
 
     private double unitPrice;
@@ -25,25 +22,19 @@ public class OrderItem {
     public OrderItem() {
     }
 
-    public OrderItem(String id, int count, double unitPrice) {
-        this.id = id;
-        this.count = count;
-        this.unitPrice = unitPrice;
+    public String getSku() {
+        return sku;
     }
 
-    public int getPrice() {
-        return price;
+    public void setSku(String sku) {
+        this.sku = sku;
     }
 
-    public void setPrice(int price) {
-        this.price = price;
-    }
-
-    public String getId() {
+    public int getId() {
         return id;
     }
 
-    public void setId(String id) {
+    public void setId(int id) {
         this.id = id;
     }
 
@@ -63,12 +54,30 @@ public class OrderItem {
         this.unitPrice = unitPrice;
     }
 
-    public double getTotalPrice() {
-        return count * getUnitPrice();
+    public int getPrice() {
+        return price;
+    }
+
+    public void setPrice(int price) {
+        this.price = price;
+    }
+
+    public OrderItem(String sku, int id, int count, double unitPrice, int price) {
+        this.sku = sku;
+        this.id = id;
+        this.count = count;
+        this.unitPrice = unitPrice;
+        this.price = price;
     }
 
     @Override
     public String toString() {
-        return "OrderItem [id=" + id + ", count=" + count + ", price=" + price + "]";
+        return "OrderItem{" +
+                "sku='" + sku + '\'' +
+                ", id=" + id +
+                ", count=" + count +
+                ", unitPrice=" + unitPrice +
+                ", price=" + price +
+                '}';
     }
 }

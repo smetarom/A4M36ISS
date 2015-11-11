@@ -15,11 +15,11 @@ public class OrderAggregationStrategy implements AggregationStrategy {
     public Exchange aggregate(Exchange oldExchange, Exchange newExchange) {
         List<ItemReply> newBody = null;
         Object body = newExchange.getIn().getBody();
+        System.out.println(body);
         if (body instanceof ItemReply) {
             newBody = new ArrayList<>();
             newBody.add((ItemReply) body);
         } else {
-            System.out.println(body);
             newBody = (List<ItemReply>) body;
         }
         if (oldExchange == null) {

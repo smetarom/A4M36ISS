@@ -10,6 +10,7 @@ import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.model.rest.RestBindingMode;
+import org.restlet.data.MediaType;
 
 import java.math.BigDecimal;
 
@@ -46,7 +47,7 @@ public class OrderProcessRoute extends RouteBuilder {
 
         from("direct:query-storage").id("storage")
                 .log("Searching for: ${body}")
-                .setHeader("itemId", simple("${body.id}"))
+                .setHeader("itemId", simple("${body.sku}"))
                 .setHeader("requestedPrice", simple("${body.price}"))
                 .setHeader("requestedCount", simple("${body.count}"))
                 .setBody(constant("select * from ITEM where id = :?itemId"))
@@ -119,14 +120,14 @@ public class OrderProcessRoute extends RouteBuilder {
                 .log("aggregate")
 //                .aggregate(new OrderAggregationStrategy()).header("orderId").completionTimeout(1000L)
                 .process(new PrepareAccountingProcessor())
-//                .removeHeaders("*")
-//                .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.POST))
-//                .to("jetty://localhost:8443/accounting/rest/accounting/invoice/issue")
-//                .convertBodyTo(String.class)
 
-                .removeHeaders("*")
+                //.removeHeaders("*")
+
+
+                .log("sending message to accounting")
+                .setHeader("Content-Type", constant("application/json"))
                 .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.POST))
-                .to("https4://147.251.253.26:8443/accounting/rest/accounting/invoice/issue")
+                .to("https4://localhost:8443/accounting/rest/accounting/invoice/issue")
                 .convertBodyTo(String.class)
                 .log("Received Accounting response: ${body}")
 
