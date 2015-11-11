@@ -34,8 +34,19 @@ import javax.xml.bind.annotation.XmlType;
 })
 public class ItemReply {
 
+    private String id;
     protected boolean available;
     protected BigDecimal price;
+    protected boolean inStore;
+    protected Integer count;
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
 
     /**
      * Gets the value of the available property.
@@ -77,11 +88,30 @@ public class ItemReply {
         this.price = value;
     }
 
+    public boolean isInStore() {
+        return inStore;
+    }
+
+    public void setInStore(boolean inStore) {
+        this.inStore = inStore;
+    }
+
+    public Integer getCount() {
+        return count;
+    }
+
+    public void setCount(Integer count) {
+        this.count = count;
+    }
+
     @Override
     public String toString() {
         return "ItemReply{" +
-                "available=" + available +
+                "id='" + id + '\'' +
+                ", available=" + available +
                 ", price=" + price +
+                ", inStore=" + inStore +
+                ", count=" + count +
                 '}';
     }
 }

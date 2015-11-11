@@ -14,8 +14,12 @@ public class ItemFoundProcessor implements org.apache.camel.Processor {
 
         ItemReply itemReply = new ItemReply();
         itemReply.setAvailable(true);
-        System.out.println("ItemFoundPprocessor: " + exchange.getIn().getHeaders());
-        itemReply.setPrice(exchange.getIn().getHeader("PRICE", BigDecimal.class));
+
+        itemReply.setInStore(true);
+        itemReply.setId(exchange.getIn().getHeader("itemId", String.class));
+        itemReply.setPrice(exchange.getIn().getHeader("requestedPrice", BigDecimal.class));
+        itemReply.setCount(exchange.getIn().getHeader("requestedCount", Integer.class));
+        exchange.getIn().setBody(itemReply);
 
     }
 }

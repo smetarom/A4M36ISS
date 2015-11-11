@@ -2,13 +2,16 @@ package com.redhat.brq.integration.camel;
 
 import com.redhat.brq.integration.camel.exception.MoreExpensiveException;
 import com.redhat.brq.integration.camel.exception.ValidationException;
+import com.redhat.brq.integration.camel.model.Invoice;
 import com.redhat.brq.integration.camel.model.Order;
 import com.redhat.brq.integration.camel.service.OrderValidator;
-import com.redhat.brq.integration.camel.service.StorageAQueryProcessor;
 import com.redhat.brq.integration.examination.supplier.a.ItemReply;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
+import org.apache.camel.Processor;
 import org.apache.camel.builder.RouteBuilder;
+import org.apache.camel.model.dataformat.JaxbDataFormat;
+import org.apache.camel.model.dataformat.JsonLibrary;
 import org.apache.camel.model.rest.RestBindingMode;
 import org.restlet.data.MediaType;
 
@@ -28,6 +31,10 @@ public class OrderProcessRoute extends RouteBuilder {
                 .dataFormatProperty("json.in.disableFeatures", "FAIL_ON_UNKNOWN_PROPERTIES");
 
 
+        JaxbDataFormat jaxb = new JaxbDataFormat(true);
+        jaxb.setContextPath("com.redhat.brq.integration.camel.model");
+
+
         rest("/orders").consumes("application/json").produces("application/json")
                 .post().type(Order.class).to("direct:new-order");
 
@@ -40,6 +47,7 @@ public class OrderProcessRoute extends RouteBuilder {
                 .onException(MoreExpensiveException.class).handled(true)
                 .log(LoggingLevel.ERROR, "Item was more expensive, canceling the order.")
                 .end()
+                .setHeader("orderAddress", simple("${body.address}"))
                 .setHeader("orderId", simple("${body.id}"))
                 .bean(OrderValidator.class, "validate")
                 .log("Issuing new order: ${body}")
@@ -120,21 +128,72 @@ public class OrderProcessRoute extends RouteBuilder {
 
 //        getContext().getComponent("")
 
-        from("seda:aggregate")
+        from("seda:aggregate").id("aggregate")
                 .log("aggregate")
-//                .aggregate(new OrderAggregationStrategy()).header("orderId").completionTimeout(1000L)
-                .process(new PrepareAccountingProcessor())
 
-                //.removeHeaders("*")
+//                .process(new PrepareAccountingProcessor())
+
+//                .removeHeaders("*")
+//                .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.POST))
+//                .to("https4://147.251.253.26:8443/accounting/rest/accounting/invoice/issue")
+//                .convertBodyTo(String.class)
+
+                .setHeader("replies", body())
+                .process(new FakeAccountingAnswer())
+                .unmarshal().json(JsonLibrary.Jackson, Invoice.class)
+                .convertBodyTo(Invoice.class)
+                .log("Received Accounting response: ${body.status}")
+                .choice()
+                .when(simple("${body.invoiceId} >= 0"))
+                .to("direct:send-items")
+                .otherwise()
+                .log("Invalid invoice")
+                .end()
+                ;
+
+        from("direct:send-items").id("send-items")
+                .transacted()
+                .setHeader("invoice", body())
+                .marshal().json(JsonLibrary.Jackson)
+                .to("activemq:queue:ORDERS")
+                .setBody(header("replies"))
+                .split(body())
+                .choice()
+                .when(simple("${body.inStore} == true"))
+                    .setHeader("itemId", simple("${body.id}"))
+                    .setHeader("count", simple("${body.count}"))
+                    .setBody(constant("update ITEM set COUNT = COUNT - :?count where id = :?itemId"))
+                .to("jdbc:dataSource?useHeadersAsParameters=true")
+                .end()
+                .end()
+                .setBody(header("invoice"))
+                ;
+    }
 
 
-                .log("sending message to accounting")
-                .setHeader("Content-Type", constant("application/json"))
-                .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.POST))
-                .to("https4://localhost:8443/accounting/rest/accounting/invoice/issue")
-                .convertBodyTo(String.class)
-                .log("Received Accounting response: ${body}")
+    private static class FakeAccountingAnswer implements Processor {
 
-                .to("mock:result");
+        @Override
+        public void process(Exchange exchange) throws Exception {
+            exchange.getIn().setBody("{\n" +
+                    "   \"invoiceId\": 1000001,\n" +
+                    "   \"order\":    {\n" +
+                    "      \"id\": 1,\n" +
+                    "      \"items\": [      {\n" +
+                    "         \"articleId\": 10,\n" +
+                    "         \"count\": 30,\n" +
+                    "         \"unitPrice\": 3\n" +
+                    "      }],\n" +
+                    "      \"address\":       {\n" +
+                    "         \"firstName\": \"Jiri\",\n" +
+                    "         \"lastName\": \"Novak\",\n" +
+                    "         \"street\": \"Purkynova\",\n" +
+                    "         \"city\": \"Brno\",\n" +
+                    "         \"zipCode\": \"602 00\"\n" +
+                    "      }\n" +
+                    "   },\n" +
+                    "   \"status\": \"ISSUED\"\n" +
+                    "}");
+        }
     }
 }
