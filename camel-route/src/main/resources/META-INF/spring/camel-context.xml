@@ -17,7 +17,7 @@
         <property name="brokerURL" value="ssl://localhost:61617"/>
         <property name="userName" value="shipuser"/>
         <property name="password" value="shippwd"/>
-        <property name="trustStore" value="${location.truststore}keystore.jks"/>
+        <property name="trustStore" value="src/main/resources/keystore.jks"/>
         <property name="trustStorePassword" value="redhat"/>
     </bean>
 
