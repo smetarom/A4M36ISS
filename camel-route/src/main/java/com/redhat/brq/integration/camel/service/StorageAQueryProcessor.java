@@ -17,7 +17,7 @@ import java.net.URL;
 public class StorageAQueryProcessor implements Processor {
     @Override
     public void process(Exchange exchange) throws Exception {
-        URL url = new URL("http://localhost:8080/supplier-a/SupplierAService?wsdl");
+        URL url = new URL("http://localhost:8080/supplier-a/SupplierAService?wsdl"); //alias druhyho dockeru
 
         QName qname = new QName("urn:com.redhat.sysint.exam:supplier-a", "SupplierAService");
 
