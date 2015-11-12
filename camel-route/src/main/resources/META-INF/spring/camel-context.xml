@@ -13,17 +13,23 @@
         </trustManagers>
     </sslContextParameters>
 
-    <bean id="jmsConnectionFactory" class="org.apache.activemq.ActiveMQSslConnectionFactory">
-        <property name="brokerURL" value="ssl://localhost:61617"/>
-        <property name="userName" value="shipuser"/>
-        <property name="password" value="shippwd"/>
-        <property name="trustStore" value="${location.truststore}keystore.jks"/>
-        <property name="trustStorePassword" value="redhat"/>
+    <bean id="jmsConnectionFactory" class="org.apache.activemq.ActiveMQConnectionFactory">
+        <property name="brokerURL" value="tcp://localhost:61616"/>
+        <property name="userName" value="admin"/>
+        <property name="password" value="admin"/>
+        <!--<property name="trustStore" value="${location.truststore}keystore.jks"/>-->
+        <!--<property name="trustStorePassword" value="redhat"/>-->
     </bean>
 
     <bean id="jmsConfig" class="org.apache.camel.component.jms.JmsConfiguration">
         <property name="connectionFactory" ref="jmsConnectionFactory"/>
-        <property name="transacted" value="false"/>
+        <property name="disableReplyTo" value="true"/>
+        <property name="transacted" value="true"/>
+        <property name="transactionManager" ref="jmsTransactionManager" />
+    </bean>
+
+    <bean id="jmsTransactionManager" class="org.springframework.jms.connection.JmsTransactionManager">
+        <property name="connectionFactory" ref="jmsConnectionFactory" />
     </bean>
 
     <bean id="activemq" class="org.apache.activemq.camel.component.ActiveMQComponent">
