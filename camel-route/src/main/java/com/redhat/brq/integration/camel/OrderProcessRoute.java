@@ -152,7 +152,7 @@ public class OrderProcessRoute extends RouteBuilder {
                 ;
 
         from("direct:send-items").id("send-items")
-               // .transacted()
+                .transacted()
                 .setHeader("invoice", body())
                 .marshal().json(JsonLibrary.Jackson)
                 .to("activemq:queue:ORDERS")
