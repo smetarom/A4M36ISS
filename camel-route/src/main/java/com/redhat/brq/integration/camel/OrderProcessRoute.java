@@ -131,12 +131,18 @@ public class OrderProcessRoute extends RouteBuilder {
         from("seda:aggregate").id("aggregate")
                 .log("aggregate")
 
-//                .process(new PrepareAccountingProcessor())
+                //.process(new PrepareAccountingProcessor())
 
 //                .removeHeaders("*")
 //                .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.POST))
 //                .to("https4://147.251.253.26:8443/accounting/rest/accounting/invoice/issue")
 //                .convertBodyTo(String.class)
+
+//                .removeHeaders("*")
+//                .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.POST))
+//                .to("https4://localhost:8444/accounting/rest/accounting/invoice/issue")
+//                .convertBodyTo(String.class)
+//                .log("Received Accounting response: ${body}")
 
                 .setHeader("replies", body())
                 .process(new FakeAccountingAnswer())
